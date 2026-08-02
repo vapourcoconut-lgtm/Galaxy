@@ -1,4 +1,4 @@
-const CACHE = "growth-workbench-v5-monochrome";
+const CACHE = "growth-workbench-v11-speaking-management";
 const ASSETS = [
   "./",
   "./index.html",

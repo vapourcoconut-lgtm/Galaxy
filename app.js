@@ -6,6 +6,9 @@ const initialState = {
   tasks: [],
   journals: [],
   ielts: [],
+  applications: [],
+  applicationOrderVersion: 1,
+  speakingSampleCleanupVersion: 1,
   workouts: [],
   reading: [],
   speakingTopics: [
@@ -14,78 +17,7 @@ const initialState = {
     { id: "speaking-topic-people", part: 2, title: "People", color: "#9a9a9a" },
     { id: "speaking-topic-education", part: 3, title: "Education", color: "#c2c2c2" }
   ],
-  speakingQuestions: [
-    {
-      id: "speaking-question-technology-1",
-      topicId: "speaking-topic-technology",
-      part: 1,
-      question: "How often do you use technology in your daily life?",
-      original: "I use technology every day. I use my phone to study English and contact my friends. Sometimes I spend too much time on short videos.",
-      improved: "Technology is a big part of my daily routine. I mainly use my phone to study English and keep in touch with friends, although I sometimes get caught up in short videos and lose track of time.",
-      final: "I use technology every day, mainly to study English and keep in touch with friends. The only downside is that I sometimes get caught up in short videos.",
-      storyMaterial: "",
-      opinion: "",
-      supportingExamples: "",
-      keywords: "",
-      relatedPart3: "",
-      notes: "练习 get caught up in 的连读，答案控制在 25 秒左右。",
-      tags: ["Part 1", "Personal Experience", "Technology"],
-      reviewStatus: "learning",
-      expressions: [
-        {
-          type: "Vocabulary",
-          expression: "get caught up in something",
-          meaning: "Become so involved in something that you lose track of time.",
-          example: "I sometimes get caught up in short videos.",
-          topics: "Technology / Social Media / Daily Life"
-        },
-        {
-          type: "Sentence Pattern",
-          expression: "The only downside is that...",
-          meaning: "自然地引出一个缺点。",
-          example: "The only downside is that it can be distracting.",
-          topics: "Most Part 1 topics"
-        }
-      ],
-      createdAt: Date.now()
-    },
-    {
-      id: "speaking-question-technology-2",
-      topicId: "speaking-topic-technology",
-      part: 1,
-      question: "Is there any technology you find difficult to use?",
-      original: "", improved: "", final: "", storyMaterial: "", opinion: "",
-      supportingExamples: "", keywords: "", relatedPart3: "", notes: "",
-      tags: ["Part 1", "Technology"], reviewStatus: "not_started",
-      expressions: [], createdAt: Date.now() - 1
-    },
-    {
-      id: "speaking-question-people-1",
-      topicId: "speaking-topic-people",
-      part: 2,
-      question: "Describe a person who encouraged you to achieve a goal.",
-      original: "", improved: "", final: "",
-      storyMaterial: "大学英语老师鼓励我参加第一次英文演讲；准备两周；虽然紧张但完成了。",
-      opinion: "", supportingExamples: "",
-      keywords: "teacher, encouragement, public speaking",
-      relatedPart3: "Why do some people need encouragement?\nWho influences young people most?",
-      notes: "可复用到 teacher / helpful person / difficult goal。",
-      tags: ["Part 2", "Personal Story", "People"], reviewStatus: "not_started",
-      expressions: [], createdAt: Date.now() - 2
-    },
-    {
-      id: "speaking-question-education-1",
-      topicId: "speaking-topic-education",
-      part: 3,
-      question: "Should schools teach more practical skills?",
-      original: "", improved: "", final: "", storyMaterial: "",
-      opinion: "Yes, but academic subjects should remain the foundation.",
-      supportingExamples: "Financial literacy, communication and basic first aid.",
-      keywords: "", relatedPart3: "", notes: "",
-      tags: ["Part 3", "Opinion", "Education"], reviewStatus: "not_started",
-      expressions: [], createdAt: Date.now() - 3
-    }
-  ]
+  speakingQuestions: []
 };
 
 let state = loadState();
@@ -96,11 +28,16 @@ let activeSpeakingTopicId = "";
 let activeSpeakingQuestionId = "";
 let speakingSearch = "";
 let speakingStatusFilter = "all";
+let applicationDragState = null;
+let editingApplicationId = "";
+let editingSpeakingTopicId = "";
+let editingSpeakingQuestionId = "";
 
 const viewNames = {
   home: "首页",
   today: "今日计划",
   ielts: "雅思学习",
+  applications: "申请项目",
   records: "习惯记录",
   growth: "成长复盘",
   settings: "设置"
@@ -109,7 +46,27 @@ const viewNames = {
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return saved ? { ...structuredClone(initialState), ...saved } : structuredClone(initialState);
+    if (!saved) return structuredClone(initialState);
+    const loaded = { ...structuredClone(initialState), ...saved };
+    loaded.applications = Array.isArray(loaded.applications) ? loaded.applications : [];
+    if (saved.applicationOrderVersion !== 1) {
+      loaded.applications.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+      loaded.applicationOrderVersion = 1;
+    }
+    if (saved.speakingSampleCleanupVersion !== 1) {
+      const sampleQuestionIds = new Set([
+        "speaking-question-technology-1",
+        "speaking-question-technology-2",
+        "speaking-question-people-1",
+        "speaking-question-education-1"
+      ]);
+      loaded.speakingQuestions = loaded.speakingQuestions.filter(
+        question => !sampleQuestionIds.has(question.id)
+      );
+      loaded.speakingSampleCleanupVersion = 1;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
+    }
+    return loaded;
   } catch {
     return structuredClone(initialState);
   }
@@ -271,6 +228,104 @@ function renderIelts() {
   document.getElementById("predictedScore").textContent = records.length ? "待人工确认" : "暂无数据";
 }
 
+function renderApplications() {
+  const projects = state.applications;
+  const activeProjects = projects.filter(project => !["已录取", "已结束"].includes(project.status));
+  const submittedProjects = projects.filter(project => project.status === "已提交").length;
+  const admittedProjects = projects.filter(project => project.status === "已录取").length;
+
+  document.getElementById("applicationOverview").innerHTML = `
+    <div><span>项目总数</span><strong>${projects.length}</strong></div>
+    <div><span>进行中</span><strong>${activeProjects.length}</strong></div>
+    <div><span>已提交</span><strong>${submittedProjects}</strong></div>
+    <div><span>已录取</span><strong>${admittedProjects}</strong></div>`;
+
+  const projectList = document.getElementById("applicationProjects");
+  projectList.innerHTML = projects.length ? projects.map(project => `
+    <article class="application-project" data-application-project="${project.id}">
+      <span class="application-drag-handle" data-application-drag-handle tabindex="0"
+        role="button" aria-label="拖动调整 ${escapeHtml(project.school)} ${escapeHtml(project.program)} 的顺序"
+        title="拖动排序；也可使用上下方向键">⠿</span>
+      <div class="application-project-main">
+        <span class="status-tag">${escapeHtml(project.status)}</span>
+        <h3>${escapeHtml(project.school)}</h3>
+        <p>${escapeHtml(project.program)}</p>
+      </div>
+      <dl class="application-project-meta">
+        <div><dt>地区</dt><dd>${escapeHtml(project.region || "未填写")}</dd></div>
+        <div><dt>截止日期</dt><dd>${project.deadline ? formatDate(project.deadline) : "未填写"}</dd></div>
+      </dl>
+      <div class="application-project-actions">
+        <button class="application-edit-button" data-edit-application="${project.id}">编辑</button>
+        <button class="application-delete-button" data-delete-application="${project.id}" aria-label="删除 ${escapeHtml(project.school)} ${escapeHtml(project.program)}">删除</button>
+      </div>
+    </article>`).join("") : `
+      <div class="empty-state application-empty">
+        <strong>还没有申请项目</strong>
+        <span>新建学校与专业项目后，可在这里集中查看和删除。</span>
+        <button class="primary-button" data-open-application>新建项目</button>
+      </div>`;
+
+  const summary = document.getElementById("applicationSummary");
+  if (!projects.length) {
+    summary.className = "empty-state compact";
+    summary.textContent = "暂无申请项目。创建后可在这里查看进度。";
+    return;
+  }
+  summary.className = "application-home-summary";
+  summary.innerHTML = `
+    <div><span>全部项目</span><strong>${projects.length}</strong></div>
+    <div><span>进行中</span><strong>${activeProjects.length}</strong></div>
+    <div><span>已提交</span><strong>${submittedProjects}</strong></div>`;
+}
+
+function applicationOrderFromDom() {
+  return [...document.querySelectorAll("[data-application-project]")]
+    .map(element => element.dataset.applicationProject);
+}
+
+function persistApplicationOrder(order, message = "项目顺序已更新") {
+  const projectsById = new Map(state.applications.map(project => [String(project.id), project]));
+  const reordered = order.map(projectId => projectsById.get(projectId)).filter(Boolean);
+  if (reordered.length !== state.applications.length) return;
+  state.applications = reordered;
+  state.applicationOrderVersion = 1;
+  saveState(message);
+}
+
+function moveApplicationWithKeyboard(projectId, direction) {
+  const currentIndex = state.applications.findIndex(project => String(project.id) === projectId);
+  const nextIndex = currentIndex + direction;
+  if (currentIndex < 0 || nextIndex < 0 || nextIndex >= state.applications.length) return;
+  const reordered = [...state.applications];
+  [reordered[currentIndex], reordered[nextIndex]] = [reordered[nextIndex], reordered[currentIndex]];
+  persistApplicationOrder(reordered.map(project => String(project.id)));
+  requestAnimationFrame(() => {
+    document.querySelector(
+      `[data-application-project="${CSS.escape(projectId)}"] [data-application-drag-handle]`
+    )?.focus();
+  });
+}
+
+function openApplicationDialog(projectId = "") {
+  editingApplicationId = projectId;
+  const form = document.getElementById("applicationForm");
+  const project = state.applications.find(item => String(item.id) === projectId);
+  form.reset();
+  document.getElementById("applicationDialogTitle").textContent =
+    project ? "编辑申请项目" : "新建申请项目";
+  document.getElementById("applicationSubmitButton").textContent =
+    project ? "保存修改" : "创建项目";
+  if (project) {
+    form.elements.school.value = project.school || "";
+    form.elements.program.value = project.program || "";
+    form.elements.region.value = project.region || "";
+    form.elements.deadline.value = project.deadline || "";
+    form.elements.status.value = project.status || "考虑中";
+  }
+  openDialog("applicationDialog");
+}
+
 function renderHabits() {
   const workouts = [...state.workouts].sort((a, b) => b.createdAt - a.createdAt);
   const reading = [...state.reading].sort((a, b) => b.createdAt - a.createdAt);
@@ -427,11 +482,17 @@ function renderSpeakingKnowledgeBase() {
   const topicList = document.getElementById("speakingTopicList");
   topicList.innerHTML = topics.length ? topics.map(topic => {
     const count = state.speakingQuestions.filter(question => question.topicId === topic.id).length;
-    return `<button class="speaking-topic ${topic.id === activeSpeakingTopicId ? "active" : ""}" data-speaking-topic="${topic.id}">
-      <i style="background:${speakingTopicColor(topic)}"></i>
-      <span>${escapeHtml(topic.title)}</span>
-      <em>${count}</em>
-    </button>`;
+    return `<div class="speaking-list-row">
+      <button class="speaking-topic ${topic.id === activeSpeakingTopicId ? "active" : ""}" data-speaking-topic="${topic.id}">
+        <i style="background:${speakingTopicColor(topic)}"></i>
+        <span>${escapeHtml(topic.title)}</span>
+        <em>${count}</em>
+      </button>
+      <div class="speaking-item-actions">
+        <button class="speaking-item-edit" data-edit-speaking-topic="${topic.id}" title="编辑 ${escapeHtml(topic.title)}">编辑话题</button>
+        <button class="speaking-item-delete" data-delete-speaking-topic-id="${topic.id}" title="删除 ${escapeHtml(topic.title)}">删除话题</button>
+      </div>
+    </div>`;
   }).join("") : `<div class="speaking-list-empty">还没有 Part ${activeSpeakingPart} 话题。</div>`;
 
   const activeTopic = getSpeakingTopic();
@@ -460,10 +521,16 @@ function renderSpeakingKnowledgeBase() {
 
   const questionList = document.getElementById("speakingQuestionList");
   questionList.innerHTML = questions.length ? questions.map(question => `
-    <button class="speaking-question ${question.id === activeSpeakingQuestionId ? "active" : ""}" data-speaking-question="${question.id}">
-      <strong>${escapeHtml(question.question)}</strong>
-      <span><i class="${escapeHtml(question.reviewStatus)}"></i>${speakingStatusLabel(question.reviewStatus)} · ${(question.tags || []).length} 标签</span>
-    </button>`).join("") : `<div class="speaking-list-empty">当前筛选下没有问题。</div>`;
+    <div class="speaking-list-row speaking-question-row">
+      <button class="speaking-question ${question.id === activeSpeakingQuestionId ? "active" : ""}" data-speaking-question="${question.id}">
+        <strong>${escapeHtml(question.question)}</strong>
+        <span><i class="${escapeHtml(question.reviewStatus)}"></i>${speakingStatusLabel(question.reviewStatus)} · ${(question.tags || []).length} 标签</span>
+      </button>
+      <div class="speaking-item-actions">
+        <button class="speaking-item-edit" data-edit-speaking-question="${question.id}" title="编辑题目">编辑题目</button>
+        <button class="speaking-item-delete" data-delete-speaking-question-id="${question.id}" title="删除题目">删除题目</button>
+      </div>
+    </div>`).join("") : `<div class="speaking-list-empty">当前筛选下没有问题。</div>`;
 
   renderSpeakingEditor();
 }
@@ -531,11 +598,15 @@ function renderSpeakingEditor() {
         <p class="eyebrow">Part ${question.part} · ${escapeHtml(topic?.title || "")}</p>
         <h3>${escapeHtml(question.question)}</h3>
       </div>
-      <select data-speaking-field="reviewStatus" aria-label="复习状态">
-        <option value="not_started" ${question.reviewStatus === "not_started" ? "selected" : ""}>未学习</option>
-        <option value="learning" ${question.reviewStatus === "learning" ? "selected" : ""}>学习中</option>
-        <option value="mastered" ${question.reviewStatus === "mastered" ? "selected" : ""}>已掌握</option>
-      </select>
+      <div class="speaking-editor-actions">
+        <select data-speaking-field="reviewStatus" aria-label="复习状态">
+          <option value="not_started" ${question.reviewStatus === "not_started" ? "selected" : ""}>未学习</option>
+          <option value="learning" ${question.reviewStatus === "learning" ? "selected" : ""}>学习中</option>
+          <option value="mastered" ${question.reviewStatus === "mastered" ? "selected" : ""}>已掌握</option>
+        </select>
+        <button class="edit-speaking-button" data-edit-speaking-question="${question.id}">编辑题目</button>
+        <button class="delete-speaking-button" data-delete-speaking-question>删除题目</button>
+      </div>
     </div>
 
     <div class="speaking-tag-row">
@@ -576,21 +647,51 @@ function updateSpeakingField(field, value) {
   document.getElementById("saveStatus").textContent = "本机数据已保存";
 }
 
-function openSpeakingQuestionDialog() {
+function openSpeakingTopicDialog(topicId = "") {
+  editingSpeakingTopicId = topicId;
+  const form = document.getElementById("speakingTopicForm");
+  const topic = getSpeakingTopic(topicId);
+  form.reset();
+  document.getElementById("speakingTopicDialogTitle").textContent =
+    topic ? "编辑口语话题" : "新建口语话题";
+  document.getElementById("speakingTopicSubmitButton").textContent =
+    topic ? "保存修改" : "创建话题";
+  form.elements.part.value = String(topic?.part || activeSpeakingPart);
+  form.elements.title.value = topic?.title || "";
+  form.elements.color.value = topic?.color || "#303030";
+  openDialog("speakingTopicDialog");
+}
+
+function openSpeakingQuestionDialog(questionId = "") {
+  editingSpeakingQuestionId = questionId;
+  const editingQuestion = getSpeakingQuestion(questionId);
+  if (editingQuestion) {
+    activeSpeakingPart = editingQuestion.part;
+    activeSpeakingTopicId = editingQuestion.topicId;
+    activeSpeakingQuestionId = editingQuestion.id;
+  }
   const topics = state.speakingTopics.filter(topic => topic.part === activeSpeakingPart);
   if (!topics.length) {
     showToast("请先创建当前 Part 的话题");
-    openDialog("speakingTopicDialog");
-    document.querySelector("#speakingTopicForm [name=part]").value = String(activeSpeakingPart);
+    openSpeakingTopicDialog();
     return;
   }
   document.getElementById("speakingQuestionDialogTitle").textContent =
-    activeSpeakingPart === 2 ? "添加 Cue Card" : `添加 Part ${activeSpeakingPart} 问题`;
+    editingQuestion
+      ? (activeSpeakingPart === 2 ? "编辑 Cue Card" : `编辑 Part ${activeSpeakingPart} 问题`)
+      : (activeSpeakingPart === 2 ? "添加 Cue Card" : `添加 Part ${activeSpeakingPart} 问题`);
   document.getElementById("speakingQuestionLabel").textContent =
     activeSpeakingPart === 2 ? "Cue Card 题目" : "Question";
+  document.getElementById("speakingQuestionSubmitButton").textContent =
+    editingQuestion ? "保存修改" : "添加到题库";
   document.getElementById("speakingQuestionTopic").innerHTML = topics.map(topic =>
-    `<option value="${topic.id}" ${topic.id === activeSpeakingTopicId ? "selected" : ""}>${escapeHtml(topic.title)}</option>`
+    `<option value="${topic.id}" ${topic.id === (editingQuestion?.topicId || activeSpeakingTopicId) ? "selected" : ""}>${escapeHtml(topic.title)}</option>`
   ).join("");
+  const form = document.getElementById("speakingQuestionForm");
+  form.elements.question.value = editingQuestion?.question || "";
+  form.elements.tags.value = editingQuestion
+    ? (editingQuestion.tags || []).filter(tag => tag !== `Part ${editingQuestion.part}`).join(", ")
+    : "";
   openDialog("speakingQuestionDialog");
 }
 
@@ -658,6 +759,7 @@ function renderAll() {
   renderTasks();
   renderDailyStatus();
   renderIelts();
+  renderApplications();
   renderSpeakingKnowledgeBase();
   renderHabits();
   renderJournals();
@@ -682,6 +784,13 @@ function switchIeltsTab(tab) {
 }
 
 document.addEventListener("click", event => {
+  const closeDialogButton = event.target.closest("[data-close-dialog]");
+  if (closeDialogButton) {
+    event.preventDefault();
+    closeDialogButton.closest("dialog")?.close();
+    return;
+  }
+
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) switchView(viewButton.dataset.view);
 
@@ -689,6 +798,13 @@ document.addEventListener("click", event => {
   if (viewTarget) switchView(viewTarget.dataset.viewTarget);
 
   if (event.target.closest("[data-open-task]")) openDialog("taskDialog");
+  if (event.target.closest("[data-open-application]")) openApplicationDialog();
+
+  const editApplication = event.target.closest("[data-edit-application]");
+  if (editApplication) {
+    openApplicationDialog(editApplication.dataset.editApplication);
+    return;
+  }
 
   const ieltsTab = event.target.closest("[data-ielts-tab]");
   if (ieltsTab) switchIeltsTab(ieltsTab.dataset.ieltsTab);
@@ -715,10 +831,85 @@ document.addEventListener("click", event => {
   }
 
   if (event.target.closest("[data-open-speaking-topic]")) {
-    openDialog("speakingTopicDialog");
-    document.querySelector("#speakingTopicForm [name=part]").value = String(activeSpeakingPart);
+    openSpeakingTopicDialog();
   }
   if (event.target.closest("[data-open-speaking-question]")) openSpeakingQuestionDialog();
+
+  const editSpeakingTopic = event.target.closest("[data-edit-speaking-topic]");
+  if (editSpeakingTopic) {
+    openSpeakingTopicDialog(editSpeakingTopic.dataset.editSpeakingTopic);
+    return;
+  }
+
+  if (event.target.closest("[data-edit-current-speaking-topic]")) {
+    const topic = getSpeakingTopic();
+    if (!topic) {
+      showToast("当前没有可编辑的话题");
+      return;
+    }
+    openSpeakingTopicDialog(topic.id);
+    return;
+  }
+
+  const editSpeakingQuestion = event.target.closest("[data-edit-speaking-question]");
+  if (editSpeakingQuestion) {
+    openSpeakingQuestionDialog(editSpeakingQuestion.dataset.editSpeakingQuestion);
+    return;
+  }
+
+  if (event.target.closest("[data-edit-current-speaking-question]")) {
+    const question = getSpeakingQuestion();
+    if (!question) {
+      showToast("当前没有可编辑的题目");
+      return;
+    }
+    openSpeakingQuestionDialog(question.id);
+    return;
+  }
+
+  const deleteSpeakingTopic = event.target.closest("[data-delete-speaking-topic-id], [data-delete-speaking-topic]");
+  if (deleteSpeakingTopic) {
+    const topic = getSpeakingTopic(deleteSpeakingTopic.dataset.deleteSpeakingTopicId);
+    if (!topic) {
+      showToast("当前没有可删除的话题");
+      return;
+    }
+    const questionCount = state.speakingQuestions.filter(question => question.topicId === topic.id).length;
+    const message = questionCount
+      ? `确认删除“${topic.title}”话题及其下 ${questionCount} 道题目？此操作无法撤销。`
+      : `确认删除“${topic.title}”话题？此操作无法撤销。`;
+    if (!confirm(message)) return;
+    state.speakingTopics = state.speakingTopics.filter(item => item.id !== topic.id);
+    state.speakingQuestions = state.speakingQuestions.filter(question => question.topicId !== topic.id);
+    activeSpeakingTopicId = "";
+    activeSpeakingQuestionId = "";
+    saveState("话题及相关题目已删除");
+    return;
+  }
+
+  const deleteSpeakingQuestion = event.target.closest("[data-delete-speaking-question-id], [data-delete-speaking-question]");
+  if (deleteSpeakingQuestion) {
+    const question = getSpeakingQuestion(deleteSpeakingQuestion.dataset.deleteSpeakingQuestionId);
+    if (!question) {
+      showToast("当前没有可删除的题目");
+      return;
+    }
+    if (!confirm(`确认删除题目“${question.question}”？此操作无法撤销。`)) return;
+    state.speakingQuestions = state.speakingQuestions.filter(item => item.id !== question.id);
+    activeSpeakingQuestionId = "";
+    saveState("题目已删除");
+    return;
+  }
+
+  const deleteApplication = event.target.closest("[data-delete-application]");
+  if (deleteApplication) {
+    const project = state.applications.find(item => item.id === deleteApplication.dataset.deleteApplication);
+    if (!project) return;
+    if (!confirm(`确认删除“${project.school} · ${project.program}”项目？此操作无法撤销。`)) return;
+    state.applications = state.applications.filter(item => item.id !== project.id);
+    saveState("申请项目已删除");
+    return;
+  }
 
   const removeSpeakingTag = event.target.closest("[data-remove-speaking-tag]");
   if (removeSpeakingTag) {
@@ -775,6 +966,14 @@ document.addEventListener("mousedown", event => {
 });
 
 document.addEventListener("keydown", event => {
+  const applicationHandle = event.target.closest("[data-application-drag-handle]");
+  if (applicationHandle && ["ArrowUp", "ArrowDown"].includes(event.key)) {
+    event.preventDefault();
+    const projectId = applicationHandle.closest("[data-application-project]").dataset.applicationProject;
+    moveApplicationWithKeyboard(projectId, event.key === "ArrowUp" ? -1 : 1);
+    return;
+  }
+
   if (event.target.id === "speakingTagInput" && event.key === "Enter") {
     event.preventDefault();
     const value = event.target.value.trim();
@@ -785,12 +984,85 @@ document.addEventListener("keydown", event => {
   }
 });
 
+document.addEventListener("pointerdown", event => {
+  const handle = event.target.closest("[data-application-drag-handle]");
+  if (!handle || (event.pointerType === "mouse" && event.button !== 0)) return;
+  const card = handle.closest("[data-application-project]");
+  const list = card?.closest("#applicationProjects");
+  if (!card || !list) return;
+  event.preventDefault();
+  applicationDragState = {
+    pointerId: event.pointerId,
+    startY: event.clientY,
+    moved: false,
+    card,
+    list,
+    handle,
+    originalOrder: applicationOrderFromDom()
+  };
+  try {
+    handle.setPointerCapture?.(event.pointerId);
+  } catch {
+    // Synthetic pointer events and older browsers may not provide active capture.
+  }
+});
+
+document.addEventListener("pointermove", event => {
+  const drag = applicationDragState;
+  if (!drag || drag.pointerId !== event.pointerId) return;
+  if (!drag.moved && Math.abs(event.clientY - drag.startY) < 5) return;
+  event.preventDefault();
+  if (!drag.moved) {
+    drag.moved = true;
+    drag.card.classList.add("dragging");
+    drag.list.classList.add("sorting");
+    document.body.classList.add("application-is-sorting");
+  }
+
+  const siblings = [...drag.list.querySelectorAll("[data-application-project]")]
+    .filter(element => element !== drag.card);
+  const insertBefore = siblings.find(element => {
+    const rect = element.getBoundingClientRect();
+    return event.clientY < rect.top + rect.height / 2;
+  });
+  if (insertBefore) {
+    drag.list.insertBefore(drag.card, insertBefore);
+  } else {
+    drag.list.append(drag.card);
+  }
+});
+
+function finishApplicationDrag(event, cancelled = false) {
+  const drag = applicationDragState;
+  if (!drag || drag.pointerId !== event.pointerId) return;
+  drag.card.classList.remove("dragging");
+  drag.list.classList.remove("sorting");
+  document.body.classList.remove("application-is-sorting");
+  try {
+    drag.handle.releasePointerCapture?.(event.pointerId);
+  } catch {
+    // The pointer may already have been released by the browser.
+  }
+  applicationDragState = null;
+  if (!drag.moved) return;
+  const nextOrder = applicationOrderFromDom();
+  if (cancelled) {
+    renderApplications();
+    return;
+  }
+  if (nextOrder.join("|") !== drag.originalOrder.join("|")) {
+    persistApplicationOrder(nextOrder);
+  }
+}
+
+document.addEventListener("pointerup", event => finishApplicationDrag(event));
+document.addEventListener("pointercancel", event => finishApplicationDrag(event, true));
+
 document.getElementById("quickAdd").addEventListener("click", () => openDialog("taskDialog"));
 document.getElementById("profileButton").addEventListener("click", () => switchView("settings"));
 document.getElementById("openIelts").addEventListener("click", () => openDialog("ieltsDialog"));
 document.getElementById("openSpeakingTopic").addEventListener("click", () => {
-  openDialog("speakingTopicDialog");
-  document.querySelector("#speakingTopicForm [name=part]").value = String(activeSpeakingPart);
+  openSpeakingTopicDialog();
 });
 document.getElementById("openWorkout").addEventListener("click", () => openDialog("workoutDialog"));
 document.getElementById("openReading").addEventListener("click", () => openDialog("readingDialog"));
@@ -860,6 +1132,35 @@ document.getElementById("ieltsForm").addEventListener("submit", event => {
   saveState("雅思记录已保存");
 });
 
+document.getElementById("applicationForm").addEventListener("submit", event => {
+  if (event.submitter?.value === "cancel") return;
+  event.preventDefault();
+  const data = new FormData(event.currentTarget);
+  const values = {
+    school: data.get("school").trim(),
+    program: data.get("program").trim(),
+    region: data.get("region").trim(),
+    deadline: data.get("deadline"),
+    status: data.get("status")
+  };
+  const project = state.applications.find(item => String(item.id) === editingApplicationId);
+  if (project) {
+    Object.assign(project, values, { updatedAt: Date.now() });
+  } else {
+    state.applications.unshift({
+      id: id(),
+      ...values,
+      createdAt: Date.now()
+    });
+  }
+  const wasEditing = Boolean(project);
+  editingApplicationId = "";
+  event.currentTarget.reset();
+  document.getElementById("applicationDialog").close();
+  saveState(wasEditing ? "申请项目已更新" : "申请项目已创建");
+  switchView("applications");
+});
+
 document.getElementById("speakingTopicForm").addEventListener("submit", event => {
   if (event.submitter?.value === "cancel") return;
   event.preventDefault();
@@ -867,26 +1168,43 @@ document.getElementById("speakingTopicForm").addEventListener("submit", event =>
   const part = Number(data.get("part"));
   const title = data.get("title").trim();
   const duplicate = state.speakingTopics.some(topic =>
+    topic.id !== editingSpeakingTopicId &&
     topic.part === part && topic.title.toLowerCase() === title.toLowerCase()
   );
   if (duplicate) {
     showToast("当前 Part 已有同名话题");
     return;
   }
-  const topic = {
-    id: id(),
-    part,
-    title,
-    color: data.get("color"),
-    createdAt: Date.now()
-  };
-  state.speakingTopics.push(topic);
+  let topic = getSpeakingTopic(editingSpeakingTopicId);
+  const wasEditing = Boolean(topic);
+  if (topic) {
+    Object.assign(topic, { part, title, color: data.get("color"), updatedAt: Date.now() });
+    state.speakingQuestions
+      .filter(question => question.topicId === topic.id)
+      .forEach(question => {
+        question.part = part;
+        question.tags = [
+          `Part ${part}`,
+          ...(question.tags || []).filter(tag => !/^Part [123]$/.test(tag))
+        ];
+      });
+  } else {
+    topic = {
+      id: id(),
+      part,
+      title,
+      color: data.get("color"),
+      createdAt: Date.now()
+    };
+    state.speakingTopics.push(topic);
+  }
+  editingSpeakingTopicId = "";
   activeSpeakingPart = part;
   activeSpeakingTopicId = topic.id;
   activeSpeakingQuestionId = "";
   event.currentTarget.reset();
   document.getElementById("speakingTopicDialog").close();
-  saveState("口语话题已创建");
+  saveState(wasEditing ? "口语话题已更新" : "口语话题已创建");
   switchIeltsTab("speaking");
 });
 
@@ -900,36 +1218,49 @@ document.getElementById("speakingQuestionForm").addEventListener("submit", event
     showToast("请选择有效话题");
     return;
   }
-  const question = {
-    id: id(),
-    topicId,
-    part: topic.part,
-    question: data.get("question").trim(),
-    original: "",
-    improved: "",
-    final: "",
-    storyMaterial: "",
-    opinion: "",
-    supportingExamples: "",
-    keywords: "",
-    relatedPart3: "",
-    notes: "",
-    tags: [
-      `Part ${topic.part}`,
-      ...String(data.get("tags") || "").split(",").map(tag => tag.trim()).filter(Boolean)
-    ],
-    reviewStatus: "not_started",
-    expressions: [],
-    createdAt: Date.now()
-  };
-  question.tags = [...new Set(question.tags)];
-  state.speakingQuestions.unshift(question);
+  let question = getSpeakingQuestion(editingSpeakingQuestionId);
+  const wasEditing = Boolean(question);
+  const tags = [...new Set([
+    `Part ${topic.part}`,
+    ...String(data.get("tags") || "").split(",").map(tag => tag.trim()).filter(Boolean)
+  ])];
+  if (question) {
+    Object.assign(question, {
+      topicId,
+      part: topic.part,
+      question: data.get("question").trim(),
+      tags,
+      updatedAt: Date.now()
+    });
+  } else {
+    question = {
+      id: id(),
+      topicId,
+      part: topic.part,
+      question: data.get("question").trim(),
+      original: "",
+      improved: "",
+      final: "",
+      storyMaterial: "",
+      opinion: "",
+      supportingExamples: "",
+      keywords: "",
+      relatedPart3: "",
+      notes: "",
+      tags,
+      reviewStatus: "not_started",
+      expressions: [],
+      createdAt: Date.now()
+    };
+    state.speakingQuestions.unshift(question);
+  }
+  editingSpeakingQuestionId = "";
   activeSpeakingPart = topic.part;
   activeSpeakingTopicId = topicId;
   activeSpeakingQuestionId = question.id;
   event.currentTarget.reset();
   document.getElementById("speakingQuestionDialog").close();
-  saveState("口语问题已添加");
+  saveState(wasEditing ? "口语问题已更新" : "口语问题已添加");
   switchIeltsTab("speaking");
 });
 
