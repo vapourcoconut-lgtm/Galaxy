@@ -9,10 +9,10 @@ const initialState = {
   workouts: [],
   reading: [],
   speakingTopics: [
-    { id: "speaking-topic-technology", part: 1, title: "Technology", color: "#9aafc1" },
-    { id: "speaking-topic-hometown", part: 1, title: "Hometown", color: "#c9a7a5" },
-    { id: "speaking-topic-people", part: 2, title: "People", color: "#a8b5a2" },
-    { id: "speaking-topic-education", part: 3, title: "Education", color: "#b8b0c5" }
+    { id: "speaking-topic-technology", part: 1, title: "Technology", color: "#303030" },
+    { id: "speaking-topic-hometown", part: 1, title: "Hometown", color: "#686868" },
+    { id: "speaking-topic-people", part: 2, title: "People", color: "#9a9a9a" },
+    { id: "speaking-topic-education", part: 3, title: "Education", color: "#c2c2c2" }
   ],
   speakingQuestions: [
     {
@@ -388,6 +388,13 @@ function getSpeakingQuestion(questionId = activeSpeakingQuestionId) {
   return state.speakingQuestions.find(question => question.id === questionId);
 }
 
+function speakingTopicColor(topic) {
+  const palette = ["#303030", "#686868", "#9a9a9a", "#c2c2c2"];
+  if (palette.includes(topic.color)) return topic.color;
+  const seed = [...topic.title].reduce((total, character) => total + character.charCodeAt(0), topic.part);
+  return palette[seed % palette.length];
+}
+
 function stripAnswerHtml(value = "") {
   const element = document.createElement("div");
   element.innerHTML = value;
@@ -421,7 +428,7 @@ function renderSpeakingKnowledgeBase() {
   topicList.innerHTML = topics.length ? topics.map(topic => {
     const count = state.speakingQuestions.filter(question => question.topicId === topic.id).length;
     return `<button class="speaking-topic ${topic.id === activeSpeakingTopicId ? "active" : ""}" data-speaking-topic="${topic.id}">
-      <i style="background:${escapeHtml(topic.color)}"></i>
+      <i style="background:${speakingTopicColor(topic)}"></i>
       <span>${escapeHtml(topic.title)}</span>
       <em>${count}</em>
     </button>`;
