@@ -197,26 +197,89 @@
         <div class="section-heading page-heading">
           <div>
             <p class="eyebrow">目标：总分 7.5</p>
-            <h2>雅思学习记录</h2>
+            <h2>雅思学习</h2>
           </div>
-          <button class="primary-button" id="openIelts">新增记录</button>
-        </div>
-        <div class="target-grid">
-          <div><span>阅读</span><strong>8.0</strong></div>
-          <div><span>听力</span><strong>8.0</strong></div>
-          <div><span>写作</span><strong>7.0</strong></div>
-          <div><span>口语</span><strong>6.5</strong></div>
-        </div>
-        <section class="panel">
-          <div class="filter-row" id="ieltsFilters">
-            <button class="filter active" data-filter="all">全部</button>
-            <button class="filter" data-filter="阅读">阅读</button>
-            <button class="filter" data-filter="听力">听力</button>
-            <button class="filter" data-filter="写作">写作</button>
-            <button class="filter" data-filter="口语">口语</button>
+          <div class="button-group">
+            <button class="secondary-button" id="openSpeakingTopic">新建口语话题</button>
+            <button class="primary-button" id="openIelts">新增学习记录</button>
           </div>
-          <div id="ieltsRecords" class="record-list"></div>
-        </section>
+        </div>
+
+        <div class="module-tabs" id="ieltsModuleTabs">
+          <button class="active" data-ielts-tab="records">学习记录</button>
+          <button data-ielts-tab="speaking">口语知识库</button>
+        </div>
+
+        <div id="ieltsRecordsModule">
+          <div class="target-grid">
+            <div><span>阅读</span><strong>8.0</strong></div>
+            <div><span>听力</span><strong>8.0</strong></div>
+            <div><span>写作</span><strong>7.0</strong></div>
+            <div><span>口语</span><strong>6.5</strong></div>
+          </div>
+          <section class="panel">
+            <div class="filter-row" id="ieltsFilters">
+              <button class="filter active" data-filter="all">全部</button>
+              <button class="filter" data-filter="阅读">阅读</button>
+              <button class="filter" data-filter="听力">听力</button>
+              <button class="filter" data-filter="写作">写作</button>
+              <button class="filter" data-filter="口语">口语</button>
+            </div>
+            <div id="ieltsRecords" class="record-list"></div>
+          </section>
+        </div>
+
+        <div id="speakingModule" hidden>
+          <div class="speaking-summary">
+            <div><span>题目总量</span><strong id="speakingQuestionCount">0</strong></div>
+            <div><span>学习中</span><strong id="speakingLearningCount">0</strong></div>
+            <div><span>已掌握</span><strong id="speakingMasteredCount">0</strong></div>
+            <div><span>表达总量</span><strong id="speakingExpressionCount">0</strong></div>
+          </div>
+
+          <div class="speaking-toolbar">
+            <div class="part-switch" id="speakingPartSwitch">
+              <button class="active" data-speaking-part="1">Part 1</button>
+              <button data-speaking-part="2">Part 2</button>
+              <button data-speaking-part="3">Part 3</button>
+            </div>
+            <label class="speaking-search">
+              <span>搜索</span>
+              <input id="speakingSearch" placeholder="题目、答案、表达或标签">
+            </label>
+            <select id="speakingStatusFilter" aria-label="按复习状态筛选">
+              <option value="all">全部状态</option>
+              <option value="not_started">未学习</option>
+              <option value="learning">学习中</option>
+              <option value="mastered">已掌握</option>
+            </select>
+          </div>
+
+          <section class="speaking-workspace">
+            <aside class="speaking-topics">
+              <div class="speaking-pane-title">
+                <span>Topics</span>
+                <button class="mini-icon-button" data-open-speaking-topic title="新建话题" aria-label="新建话题">＋</button>
+              </div>
+              <div id="speakingTopicList" class="speaking-topic-list"></div>
+            </aside>
+
+            <div class="speaking-questions">
+              <div class="speaking-pane-title">
+                <span id="speakingQuestionPaneTitle">Questions</span>
+                <button class="mini-icon-button" data-open-speaking-question title="添加问题" aria-label="添加问题">＋</button>
+              </div>
+              <div id="speakingQuestionList" class="speaking-question-list"></div>
+            </div>
+
+            <article class="speaking-editor" id="speakingEditor">
+              <div class="speaking-empty">
+                <strong>选择或添加一个问题</strong>
+                <span>三个答案版本、表达与批注会显示在这里。</span>
+              </div>
+            </article>
+          </section>
+        </div>
       </section>
 
       <section class="view" id="recordsView">
@@ -345,6 +408,53 @@
       <label>主要问题<textarea name="problem" rows="2" placeholder="没有记录可留空"></textarea></label>
       <label>下一步重点<textarea name="nextFocus" rows="2" required></textarea></label>
       <button class="primary-button full-width" value="default">保存记录</button>
+    </form>
+  </dialog>
+
+  <dialog id="speakingTopicDialog">
+    <form method="dialog" class="dialog-form" id="speakingTopicForm">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">Speaking Knowledge Base</p><h2>新建口语话题</h2></div>
+        <button value="cancel" class="close-button" aria-label="关闭">×</button>
+      </div>
+      <label>所属部分
+        <select name="part">
+          <option value="1">Part 1 · 短回答</option>
+          <option value="2">Part 2 · Cue Card</option>
+          <option value="3">Part 3 · 深度观点</option>
+        </select>
+      </label>
+      <label>Topic Title
+        <input name="title" required maxlength="80" placeholder="例如 Technology">
+      </label>
+      <label>标识颜色
+        <select name="color">
+          <option value="#9aafc1">雾霾蓝</option>
+          <option value="#a8b5a2">鼠尾草绿</option>
+          <option value="#c9a7a5">灰粉</option>
+          <option value="#b8b0c5">灰紫</option>
+        </select>
+      </label>
+      <button class="primary-button full-width" value="default">创建话题</button>
+    </form>
+  </dialog>
+
+  <dialog id="speakingQuestionDialog">
+    <form method="dialog" class="dialog-form" id="speakingQuestionForm">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">Question Bank</p><h2 id="speakingQuestionDialogTitle">添加口语问题</h2></div>
+        <button value="cancel" class="close-button" aria-label="关闭">×</button>
+      </div>
+      <label>Topic
+        <select name="topicId" id="speakingQuestionTopic" required></select>
+      </label>
+      <label><span id="speakingQuestionLabel">Question</span>
+        <textarea name="question" rows="4" required placeholder="输入具体雅思问题"></textarea>
+      </label>
+      <label>初始标签
+        <input name="tags" placeholder="用英文逗号分隔，例如 Personal Experience, Frequently Tested">
+      </label>
+      <button class="primary-button full-width" value="default">添加到题库</button>
     </form>
   </dialog>
 

@@ -30,8 +30,28 @@
 - 页面和数据结构：已完成
 - 第一阶段模板：已完成
 - 第一阶段 Web App：已完成
+- 雅思口语知识库第一阶段：已完成
 - 固定在线链接：`https://vapourcoconut-lgtm.github.io/Galaxy/`
 - 发布方式：GitHub Pages，`main` 分支根目录
+
+## 雅思口语知识库
+
+雅思页面现包含“学习记录”和“口语知识库”两个标签。口语知识库已支持：
+
+- Part 1 / Part 2 / Part 3 独立分类
+- Topic 创建与问题录入
+- Original / AI Improved / Final 三版本答案
+- Part 2 故事素材、关键词与相关 Part 3 问题
+- Part 3 观点与支撑案例
+- Vocabulary Bank 与 Sentence Patterns 提取
+- 黄、蓝、红、绿四色文本高亮
+- 标签、备注、搜索和复习状态
+- 手机端响应式使用
+
+详细关系型数据库设计见 [docs/database-design.md](docs/database-design.md)。
+
+当前网页仍是纯前端本地版本。AI 优化与表达提取按钮使用本地示例生成逻辑，
+真实模型调用应通过后端 API 完成，不能把模型密钥写入浏览器代码。
 
 ## 在线使用
 
