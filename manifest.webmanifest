@@ -1,0 +1,19 @@
+{
+  "name": "个人成长型 AI 工作台",
+  "short_name": "成长工作台",
+  "description": "管理雅思学习、每日计划、运动、阅读与成长复盘。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f1ea",
+  "theme_color": "#f5f1ea",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
