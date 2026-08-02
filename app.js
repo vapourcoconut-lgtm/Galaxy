@@ -230,7 +230,7 @@ function renderJournals() {
   const today = localDate();
   const journal = state.journals.find(j => j.date === today);
   const form = document.getElementById("journalForm");
-  ["completed", "blocker", "learned", "tomorrow"].forEach(field => {
+  ["gratitude", "improvements", "affirmation"].forEach(field => {
     form.elements[field].value = journal?.[field] || "";
   });
   document.getElementById("journalStreak").textContent = `${journalStreak()} 天`;
@@ -423,13 +423,14 @@ document.getElementById("journalForm").addEventListener("submit", event => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   const today = localDate();
+  const existing = state.journals.find(item => item.date === today) || {};
   const record = {
-    id: state.journals.find(item => item.date === today)?.id || id(),
+    ...existing,
+    id: existing.id || id(),
     date: today, createdAt: Date.now(),
-    completed: data.get("completed").trim(),
-    blocker: data.get("blocker").trim(),
-    learned: data.get("learned").trim(),
-    tomorrow: data.get("tomorrow").trim()
+    gratitude: data.get("gratitude").trim(),
+    improvements: data.get("improvements").trim(),
+    affirmation: data.get("affirmation").trim()
   };
   state.journals = state.journals.filter(item => item.date !== today);
   state.journals.push(record);
