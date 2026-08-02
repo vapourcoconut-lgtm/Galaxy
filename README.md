@@ -29,6 +29,14 @@
 - 产品方案：已完成
 - 页面和数据结构：已完成
 - 第一阶段模板：已完成
-- Web App 开发：待确认方案后开始
-- 固定在线链接：需在 Web App 部署后生成
+- 第一阶段 Web App：已完成
+- 固定在线链接：`https://vapourcoconut-lgtm.github.io/Galaxy/`
+- 发布方式：GitHub Pages，`main` 分支根目录
 
+## 在线使用
+
+手机和电脑均可打开：
+
+`https://vapourcoconut-lgtm.github.io/Galaxy/`
+
+当前版本的数据保存在访问设备的浏览器中。页面刷新不会丢失数据，也支持导入和导出；不同设备之间暂不自动同步。后续代码更新继续推送到同一仓库，访问链接保持不变。
