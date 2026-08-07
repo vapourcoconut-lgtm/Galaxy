@@ -5,9 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f3f3f2">
   <meta name="description" content="个人成长型 AI 工作台">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="成长工作台">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>个人成长工作台</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -25,6 +30,7 @@
         <button class="nav-item" data-view="today">今日</button>
         <button class="nav-item" data-view="ielts">雅思</button>
         <button class="nav-item" data-view="applications">申请项目</button>
+        <button class="nav-item" data-view="reading">阅读成长</button>
         <button class="nav-item" data-view="records">习惯记录</button>
         <button class="nav-item" data-view="growth">成长复盘</button>
         <button class="nav-item" data-view="settings">设置</button>
@@ -42,6 +48,10 @@
           <h1 id="viewTitle">首页</h1>
         </div>
         <div class="top-actions">
+          <label class="page-sort">
+            <span>排序</span>
+            <select id="pageSort" aria-label="当前页面排序方式"></select>
+          </label>
           <button class="icon-button" id="quickAdd" title="快速添加任务" aria-label="快速添加任务">＋</button>
           <button class="avatar-button" id="profileButton" title="个人设置" aria-label="个人设置">ME</button>
         </div>
@@ -118,14 +128,25 @@
                 <strong id="workoutCount">0 次</strong>
               </div>
               <div class="metric">
-                <span>阅读进度</span>
-                <strong id="readingProgress">暂无数据</strong>
+                <span>本周运动时长</span>
+                <strong id="workoutMinutes">0 分钟</strong>
               </div>
               <div class="metric">
                 <span>日记记录</span>
                 <strong id="journalCount">0 篇</strong>
               </div>
             </div>
+          </section>
+
+          <section class="panel reading-home-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">长期积累</p>
+                <h2>Reading Growth Hub</h2>
+              </div>
+              <button class="text-button" data-view-target="reading">进入阅读空间</button>
+            </div>
+            <div id="readingHomeSummary" class="reading-home-summary"></div>
           </section>
 
           <section class="panel application-panel">
@@ -232,7 +253,6 @@
             <div><span>题目总量</span><strong id="speakingQuestionCount">0</strong></div>
             <div><span>学习中</span><strong id="speakingLearningCount">0</strong></div>
             <div><span>已掌握</span><strong id="speakingMasteredCount">0</strong></div>
-            <div><span>表达总量</span><strong id="speakingExpressionCount">0</strong></div>
           </div>
 
           <div class="speaking-toolbar">
@@ -243,7 +263,7 @@
             </div>
             <label class="speaking-search">
               <span>搜索</span>
-              <input id="speakingSearch" placeholder="题目、答案、表达或标签">
+              <input id="speakingSearch" placeholder="题目、Answer、关键词或标签">
             </label>
             <select id="speakingStatusFilter" aria-label="按复习状态筛选">
               <option value="all">全部状态</option>
@@ -256,10 +276,10 @@
           <section class="speaking-workspace">
             <aside class="speaking-topics">
               <div class="speaking-pane-title">
-                <span>Topics</span>
+                <span>话题</span>
                 <div class="speaking-pane-actions">
-                  <button class="mini-text-button" data-edit-current-speaking-topic title="编辑当前话题">编辑当前话题</button>
-                  <button class="mini-text-button" data-delete-speaking-topic title="删除当前话题">删除当前话题</button>
+                  <button class="mini-text-button" data-edit-current-speaking-topic title="编辑当前话题">编辑</button>
+                  <button class="mini-text-button" data-delete-speaking-topic title="删除当前话题">删除</button>
                   <button class="mini-icon-button" data-open-speaking-topic title="新建话题" aria-label="新建话题">＋</button>
                 </div>
               </div>
@@ -270,8 +290,8 @@
               <div class="speaking-pane-title">
                 <span id="speakingQuestionPaneTitle">Questions</span>
                 <div class="speaking-pane-actions">
-                  <button class="mini-text-button" data-edit-current-speaking-question title="编辑当前题目">编辑当前题目</button>
-                  <button class="mini-text-button" data-delete-speaking-question title="删除当前题目">删除当前题目</button>
+                  <button class="mini-text-button" data-edit-current-speaking-question title="编辑当前题目">编辑</button>
+                  <button class="mini-text-button" data-delete-speaking-question title="删除当前题目">删除</button>
                   <button class="mini-icon-button" data-open-speaking-question title="添加问题" aria-label="添加问题">＋</button>
                 </div>
               </div>
@@ -281,7 +301,7 @@
             <article class="speaking-editor" id="speakingEditor">
               <div class="speaking-empty">
                 <strong>选择或添加一个问题</strong>
-                <span>三个答案版本、表达与批注会显示在这里。</span>
+                <span>Answer、关键词与批注会显示在这里。</span>
               </div>
             </article>
           </section>
@@ -306,28 +326,122 @@
         <div class="section-heading page-heading">
           <div>
             <p class="eyebrow">轻量记录</p>
-            <h2>运动与阅读</h2>
+            <h2>运动记录</h2>
           </div>
-          <div class="button-group">
-            <button class="secondary-button" id="openWorkout">记录运动</button>
-            <button class="primary-button" id="openReading">记录阅读</button>
-          </div>
+          <button class="primary-button" id="openWorkout">记录运动</button>
         </div>
-        <div class="page-grid">
-          <section class="panel">
-            <div class="section-heading">
-              <h2>运动记录</h2>
-              <span class="status-tag">不编造消耗</span>
+        <section class="panel">
+          <div class="section-heading">
+            <h2>运动记录</h2>
+            <span class="status-tag">不编造消耗</span>
+          </div>
+          <div id="workoutRecords" class="record-list"></div>
+        </section>
+      </section>
+
+      <section class="view reading-view" id="readingView">
+        <div class="section-heading page-heading reading-page-heading">
+          <div>
+            <p class="eyebrow">个人阅读成长系统</p>
+            <h2>Reading Growth Hub</h2>
+            <p class="page-description">在不影响雅思与研究生申请的前提下，建立可持续的阅读、思考与表达习惯。</p>
+          </div>
+          <button class="primary-button" data-reading-action="log">快速记录</button>
+        </div>
+
+        <div class="reading-tabs" id="readingTabs" aria-label="阅读模块导航">
+          <button class="active" data-reading-tab="dashboard">年度目标</button>
+          <button data-reading-tab="monthly">月度计划</button>
+          <button data-reading-tab="library">我的书库</button>
+          <button data-reading-tab="logs">阅读记录</button>
+          <button data-reading-tab="quotes">摘抄库</button>
+          <button data-reading-tab="notes">思考笔记</button>
+        </div>
+
+        <div class="reading-module active" id="readingDashboardModule">
+          <div class="reading-hero">
+            <div>
+              <p class="eyebrow">My Reading Year · <span id="readingYearLabel"></span></p>
+              <h3>少而持续，读完以后留下自己的话。</h3>
+              <p>默认目标按雅思与申请优先的现实节奏设置，可随时调整。</p>
             </div>
-            <div id="workoutRecords" class="record-list"></div>
+            <button class="secondary-button" data-reading-action="goal">调整年度目标</button>
+          </div>
+          <div class="reading-kpi-grid" id="readingKpis"></div>
+          <div class="reading-dashboard-grid">
+            <section class="panel">
+              <div class="section-heading"><div><p class="eyebrow">正在阅读</p><h2>当前书籍</h2></div><button class="text-button" data-reading-action="book">添加书籍</button></div>
+              <div id="currentReadingBooks" class="reading-book-stack"></div>
+            </section>
+            <section class="panel">
+              <div class="section-heading"><div><p class="eyebrow">最近六个月</p><h2>阅读趋势</h2></div><span class="status-tag purple">分钟</span></div>
+              <div id="readingTrend" class="reading-trend"></div>
+            </section>
+          </div>
+          <section class="panel reading-theme-panel">
+            <div class="section-heading"><div><p class="eyebrow">重点方向</p><h2>年度主题</h2></div></div>
+            <div id="readingThemes" class="reading-theme-list"></div>
           </section>
-          <section class="panel">
-            <div class="section-heading">
-              <h2>阅读记录</h2>
-              <span class="status-tag purple">年度积累</span>
+          <section class="future-strip">
+            <div><strong>AI 阅读分析</strong><span>阅读前导读、概念解释与全书报告</span></div>
+            <div><strong>知识连接</strong><span>发现书籍、主题与个人经历之间的联系</span></div>
+            <div><strong>年度报告</strong><span>基于真实记录生成 My Reading Year Report</span></div>
+            <span class="future-badge">下一阶段</span>
+          </section>
+        </div>
+
+        <div class="reading-module" id="readingMonthlyModule">
+          <div class="section-heading module-heading">
+            <div><p class="eyebrow">轻量可执行</p><h2>Monthly Reading Plan</h2></div>
+            <button class="primary-button" data-reading-action="month">新建月度计划</button>
+          </div>
+          <div id="monthlyPlans" class="reading-card-list"></div>
+        </div>
+
+        <div class="reading-module" id="readingLibraryModule">
+          <div class="reading-toolbar">
+            <div><p class="eyebrow">Personal Library</p><h2>我的书库</h2></div>
+            <div class="reading-toolbar-actions">
+              <input id="bookSearch" type="search" placeholder="搜索书名或作者">
+              <select id="bookCategoryFilter" aria-label="筛选书籍分类">
+                <option value="all">全部分类</option>
+                <option>商业管理</option><option>经济学</option><option>心理学</option><option>教育</option>
+                <option>文学</option><option>哲学</option><option>英文原版</option><option>其他</option>
+              </select>
+              <button class="primary-button" data-reading-action="book">添加书籍</button>
             </div>
-            <div id="readingRecords" class="record-list"></div>
-          </section>
+          </div>
+          <div id="bookLibrary" class="book-library-grid"></div>
+        </div>
+
+        <div class="reading-module" id="readingLogsModule">
+          <div class="section-heading module-heading">
+            <div><p class="eyebrow">每次阅读都留下痕迹</p><h2>阅读记录</h2></div>
+            <button class="primary-button" data-reading-action="log">记录本次阅读</button>
+          </div>
+          <div id="readingLogList" class="reading-card-list"></div>
+        </div>
+
+        <div class="reading-module" id="readingQuotesModule">
+          <div class="section-heading module-heading">
+            <div><p class="eyebrow">Quote Bank</p><h2>摘抄库</h2></div>
+            <button class="primary-button" data-reading-action="quote">添加摘抄</button>
+          </div>
+          <div class="highlight-legend">
+            <span><i class="highlight-key yellow"></i>重点摘抄</span>
+            <span><i class="highlight-key blue"></i>重要概念</span>
+            <span><i class="highlight-key green"></i>个人思考</span>
+            <span><i class="highlight-key gray"></i>补充信息</span>
+          </div>
+          <div id="quoteBank" class="quote-bank-grid"></div>
+        </div>
+
+        <div class="reading-module" id="readingNotesModule">
+          <div class="section-heading module-heading">
+            <div><p class="eyebrow">从输入到表达</p><h2>思考笔记</h2></div>
+            <button class="primary-button" data-reading-action="note">新建读后思考</button>
+          </div>
+          <div id="bookNotes" class="reading-card-list"></div>
         </div>
       </section>
 
@@ -371,12 +485,20 @@
           </section>
           <section class="panel">
             <h2>数据管理</h2>
-            <p class="muted">当前版本保存在本机浏览器。连接云端数据库后，可在手机和电脑间实时同步。</p>
+            <p class="muted">本机数据可导出备份；登录云端账号后，会在手机和电脑间自动同步。</p>
             <div class="button-column">
               <button class="secondary-button" id="exportData">导出数据</button>
               <label class="secondary-button file-button">导入数据<input id="importData" type="file" accept="application/json"></label>
               <button class="danger-button" id="clearData">清空本机数据</button>
             </div>
+          </section>
+          <section class="panel">
+            <h2>账号与云同步</h2>
+            <div class="cloud-settings-status" id="cloudSettingsStatus">
+              <span class="sync-state-dot"></span>
+              <div><strong>尚未连接云端</strong><small>配置 Supabase 后可注册账号并跨设备同步。</small></div>
+            </div>
+            <button class="secondary-button full-width" type="button" data-open-account>打开账号中心</button>
           </section>
         </div>
       </section>
@@ -388,7 +510,8 @@
     <button data-view="today"><span>今日</span></button>
     <button data-view="ielts"><span>雅思</span></button>
     <button data-view="applications"><span>申请</span></button>
-    <button data-view="records"><span>记录</span></button>
+    <button data-view="reading"><span>阅读</span></button>
+    <button data-view="records"><span>运动</span></button>
     <button data-view="settings"><span>更多</span></button>
   </nav>
 
@@ -532,23 +655,177 @@
     </form>
   </dialog>
 
-  <dialog id="readingDialog">
-    <form method="dialog" class="dialog-form" id="readingForm">
+  <dialog id="readingGoalDialog">
+    <form method="dialog" class="dialog-form" id="readingGoalForm">
       <div class="dialog-heading">
-        <div><p class="eyebrow">阅读积累</p><h2>阅读记录</h2></div>
+        <div><p class="eyebrow">Annual Reading Goal</p><h2>年度阅读目标</h2></div>
         <button type="button" class="close-button" data-close-dialog aria-label="关闭">×</button>
       </div>
-      <label>书名<input name="book" required></label>
       <div class="two-columns">
-        <label>当前页<input type="number" min="0" name="currentPage" required></label>
-        <label>总页数<input type="number" min="1" name="totalPages" required></label>
+        <label>年份<input type="number" name="year" min="2020" max="2100" required></label>
+        <label>目标书籍数量<input type="number" name="targetBooks" min="1" max="100" required></label>
       </div>
-      <label>核心观点或个人思考<textarea name="note" rows="3"></textarea></label>
-      <button class="primary-button full-width" value="default">保存记录</button>
+      <label>年度阅读时间目标（小时）<input type="number" name="targetHours" min="1" max="1000" required></label>
+      <label>目标主题分类<input name="themes" placeholder="用逗号分隔，例如 英文原版, 心理学, 文学"></label>
+      <p class="form-hint">建议保持每月 1 本以内、每周约 60 至 90 分钟，避免挤占雅思与申请时间。</p>
+      <button class="primary-button full-width" value="default">保存年度目标</button>
     </form>
   </dialog>
 
+  <dialog id="monthlyPlanDialog">
+    <form method="dialog" class="dialog-form" id="monthlyPlanForm">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">Monthly Reading Plan</p><h2>月度阅读计划</h2></div>
+        <button type="button" class="close-button" data-close-dialog aria-label="关闭">×</button>
+      </div>
+      <label>月份<input type="month" name="month" required></label>
+      <label>本月目标书籍<input name="targetBooks" placeholder="例如：完成《思考，快与慢》前半部分" required></label>
+      <div class="two-columns">
+        <label>阅读页数目标<input type="number" name="targetPages" min="1" required></label>
+        <label>阅读时间目标（分钟）<input type="number" name="targetMinutes" min="10" step="10" required></label>
+      </div>
+      <label>重点阅读主题<input name="theme" placeholder="例如 心理学"></label>
+      <label>月度总结<textarea name="summary" rows="3" placeholder="月末再补充也可以"></textarea></label>
+      <button class="primary-button full-width" value="default">保存计划</button>
+    </form>
+  </dialog>
+
+  <dialog id="bookDialog">
+    <form method="dialog" class="dialog-form reading-dialog-form" id="bookForm">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">Personal Library</p><h2>添加书籍</h2></div>
+        <button type="button" class="close-button" data-close-dialog aria-label="关闭">×</button>
+      </div>
+      <label>书名<input name="title" required maxlength="120"></label>
+      <label>作者<input name="author" maxlength="100"></label>
+      <div class="two-columns">
+        <label>分类<select name="category"><option>商业管理</option><option>经济学</option><option>心理学</option><option>教育</option><option>文学</option><option>哲学</option><option>英文原版</option><option>其他</option></select></label>
+        <label>阅读语言<select name="language"><option>中文</option><option>英文</option><option>其他</option></select></label>
+      </div>
+      <div class="two-columns">
+        <label>开始日期<input type="date" name="startDate"></label>
+        <label>完成日期<input type="date" name="finishDate"></label>
+      </div>
+      <div class="two-columns">
+        <label>总页数<input type="number" min="1" name="totalPages" required></label>
+        <label>当前页<input type="number" min="0" name="currentPage" value="0" required></label>
+      </div>
+      <div class="two-columns">
+        <label>状态<select name="status"><option>想读</option><option>在读</option><option>已读</option><option>暂停</option></select></label>
+        <label>评分（0-5）<input type="number" min="0" max="5" step="0.5" name="rating"></label>
+      </div>
+      <button class="primary-button full-width" value="default">保存到书库</button>
+    </form>
+  </dialog>
+
+  <dialog id="readingLogDialog">
+    <form method="dialog" class="dialog-form reading-dialog-form" id="readingLogForm">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">Reading Session</p><h2>记录本次阅读</h2></div>
+        <button type="button" class="close-button" data-close-dialog aria-label="关闭">×</button>
+      </div>
+      <label>书籍<select name="bookId" data-book-options required></select></label>
+      <div class="two-columns">
+        <label>日期<input type="date" name="date" required></label>
+        <label>阅读时间（分钟）<input type="number" name="minutes" min="1" required></label>
+      </div>
+      <div class="two-columns">
+        <label>本次阅读页数<input type="number" name="pagesRead" min="1" required></label>
+        <label>读至第几页<input type="number" name="currentPage" min="0" required></label>
+      </div>
+      <label>阅读章节<input name="chapter" placeholder="例如 第 3 章：注意力"></label>
+      <label>内容总结<textarea name="summary" rows="3"></textarea></label>
+      <label>今日收获<textarea name="takeaway" rows="2"></textarea></label>
+      <label>一个重要观点<textarea name="keyIdea" rows="2"></textarea></label>
+      <label>我的思考<textarea name="reflection" rows="3"></textarea></label>
+      <button class="primary-button full-width" value="default">保存阅读记录</button>
+    </form>
+  </dialog>
+
+  <dialog id="quoteDialog">
+    <form method="dialog" class="dialog-form reading-dialog-form" id="quoteForm">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">Quote Bank</p><h2>添加摘抄</h2></div>
+        <button type="button" class="close-button" data-close-dialog aria-label="关闭">×</button>
+      </div>
+      <label>摘抄内容<textarea name="content" rows="6" required></textarea></label>
+      <label>摘抄图片（可选，建议小于 1 MB）<input type="file" name="image" accept="image/*"></label>
+      <div class="two-columns">
+        <label>来源书籍<select name="bookId" data-book-options required></select></label>
+        <label>页码<input type="number" min="0" name="page"></label>
+      </div>
+      <div class="two-columns">
+        <label>语言<select name="language"><option>中文</option><option>英文</option></select></label>
+        <label>高亮<select name="highlight"><option value="yellow">黄色 · 重点摘抄</option><option value="blue">蓝色 · 重要概念</option><option value="green">绿色 · 个人思考</option><option value="gray">灰色 · 补充信息</option></select></label>
+      </div>
+      <label>主题与标签<input name="tags" placeholder="用逗号分隔"></label>
+      <label>我的理解<textarea name="understanding" rows="3"></textarea></label>
+      <label>可以应用的地方<textarea name="application" rows="2"></textarea></label>
+      <button class="primary-button full-width" value="default">保存摘抄</button>
+    </form>
+  </dialog>
+
+  <dialog id="bookNoteDialog">
+    <form method="dialog" class="dialog-form reading-dialog-form" id="bookNoteForm">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">Thinking Note</p><h2>新建读后思考</h2></div>
+        <button type="button" class="close-button" data-close-dialog aria-label="关闭">×</button>
+      </div>
+      <label>书籍<select name="bookId" data-book-options required></select></label>
+      <label>书籍核心观点<textarea name="coreIdeas" rows="3" required></textarea></label>
+      <label>我的理解<textarea name="understanding" rows="3"></textarea></label>
+      <label>最重要的三个启发<textarea name="insights" rows="4" placeholder="1.&#10;2.&#10;3."></textarea></label>
+      <label>与我的经历联系<textarea name="experience" rows="3"></textarea></label>
+      <label>对未来学习、工作或生活的影响<textarea name="impact" rows="3"></textarea></label>
+      <label>可以实际应用的地方<textarea name="application" rows="3"></textarea></label>
+      <button class="primary-button full-width" value="default">保存思考笔记</button>
+    </form>
+  </dialog>
+
+  <dialog id="accountDialog">
+    <div class="dialog-form account-dialog-content">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">Account & Cloud Sync</p><h2>账号与云同步</h2></div>
+        <button type="button" class="close-button" data-close-dialog aria-label="关闭">×</button>
+      </div>
+
+      <div class="cloud-config-warning" id="cloudConfigWarning" hidden>
+        云端尚未配置。请先在 <code>supabase-config.js</code> 填写项目地址和 anon public key。
+      </div>
+
+      <div id="accountSignedOut">
+        <form class="form-stack" id="accountForm">
+          <label>邮箱<input id="accountEmail" type="email" autocomplete="email" required></label>
+          <label>密码<input id="accountPassword" type="password" autocomplete="current-password" minlength="6" required></label>
+          <div class="dialog-actions account-actions">
+            <button class="secondary-button" type="button" id="registerAccount">注册账号</button>
+            <button class="primary-button" type="submit">登录</button>
+          </div>
+        </form>
+        <p class="form-hint">同一邮箱账号可在手机、电脑和平板登录。若项目开启邮箱验证，注册后需要先查收确认邮件。</p>
+      </div>
+
+      <div id="accountSignedIn" hidden>
+        <div class="signed-in-profile">
+          <span class="sync-state-dot connected"></span>
+          <div><strong id="accountUserEmail"></strong><small id="accountSyncStatus">准备同步</small></div>
+        </div>
+        <div class="button-column">
+          <button class="primary-button" type="button" id="syncNow">立即双向同步</button>
+          <button class="secondary-button" type="button" id="downloadCloudData">用云端数据覆盖本机</button>
+          <button class="secondary-button" type="button" id="uploadLocalData">用本机数据覆盖云端</button>
+          <button class="danger-button" type="button" id="signOutAccount">退出账号</button>
+        </div>
+        <p class="form-hint">自动同步采用最近修改优先。手动覆盖前建议先导出一份本机备份。</p>
+      </div>
+
+      <p class="account-message" id="accountMessage" role="status" aria-live="polite"></p>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
